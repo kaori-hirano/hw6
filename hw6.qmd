@@ -1,0 +1,33 @@
+---
+title: "HW 6: Forging Your Own Path Toward Understanding Attitudes Toward Scientists Among US Voters"
+author: "Insert your name here"
+date: "Insert date here"
+format: pdf
+---
+
+# Packages
+
+```{r load-packages}
+# load packages here
+```
+
+# Data
+
+```{r import-data}
+# import data here
+```
+
+# Exercises
+
+## Variable Selection
+
+### Q1
+
+*Written response here.*
+
+## Data Visualization
+
+## Modeling
+
+*Add question headers as needed*.
+
