@@ -8,26 +8,215 @@ format: pdf
 # Packages
 
 ```{r load-packages}
-# load packages here
+library(readr)
+suppressPackageStartupMessages(library(tidyverse))
+suppressPackageStartupMessages(library(dplyr))
+library(patchwork)
+suppressPackageStartupMessages(library(glmnet)) # for ridge, LASSO
+library(randomForest)
+suppressPackageStartupMessages(library(caret))
+
 ```
 
 # Data
 
 ```{r import-data}
-# import data here
+#| warning: false
+#| message: false
+# imports data, sets na to be any of the values
+# where the respondent did not give an answer
+# note that 'inapplicable' was retained (-1)
+anes2020 <- read_csv("data/anes2020.csv", show_col_types = FALSE, na = c('-9', '-8', '-7', '-6', '-5', '-4', '998', '999'))
 ```
 
 # Exercises
 
 ## Variable Selection
+```{r variable-selection}
+d <- anes2020 %>% select(V202025, V202029, V202110x, V202158,
+                         V202175, V202185, V202187, V202309, V202310, V202312, 
+                         V202331x, V202443, V202553, V202332, V202173, V202381)
+                         
+d <- d %>% rename(comment = V202029, protest = V202025 , pres = V202110x, draf = V202158,
+                         journalists = V202175, pp = V202185, cdc = V202187, understand = V202309, sidc = V202310, lies = V202312, 
+                         vacs = V202331x, party = V202443, autism = V202553, cc = V202332, scientists = V202173, riskv = V202381)
+
+d <- d %>% drop_na()
+```
 
 ### Q1
-
-*Written response here.*
-
+Choose at least 10 variables (they can be be functions of existing variables, like if you want
+to turn a multi-category variable in a binary one) as predictors for a model predicting feelings
+toward scientists. In 4-5 sentences, explain why you chose the variables that you did.
+The variables I chose tried to reflect a variety of things that I thought could be related to how people feel toward scientists. I chose some politically oriented variables, such as who and which party they voted for in the presidential election, because this was a highly polarized election and one candidate had very different views on science than another. I also chose a few feelings thermometers about related topics to science, such as Dr. Anthony Fauci, planned parenthood, and the cdc. I then added a few general science knowledge questions, such as if science is easy to understand as a nonexpert and if vaccines cause autism, to see if understanding of science plays a role in feelings toward scientists. The last set of variables I included dealt with how the respondent felt about political issues aligned with science, such as climate change, covid response, and teaching in schools, which would likely have an effect on how scientists are viewed. 
+```{r data-cleaning}
+#| warning: false
+#| message: false
+# should be done but here in case it's needed
+cols <- c('autism', 'party', 'riskv', 'pres', 'comment', 'protest')
+d <- d %>% mutate_each_(funs(factor(.)), cols)
+```
 ## Data Visualization
+Make an appropriate plot for the outcome variable.
+```{r outcome-plot}
+#| message: false
+b <- ggplot(d, aes(x = scientists)) +
+  geom_boxplot()
+
+h <- ggplot(d, aes(x = scientists)) +
+  geom_histogram()
+
+b + h
+```
+
+In 4-5 sentences, explain what the plot shows and why you went with the plot you did. Remember that the plot has to look nice and interpretable.
+The boxplot above helps visualize the distribution on feelings toward scientists. We can see that from the 25th percentile and above there are feelings above a 65 warmness rating, while there are a few outliers in the below 25 warmth rating composing a small part of the data. The median warmth appears to be around 85. I also included a histogram, which shows similar information to the boxplot and adds more information regarding the specific breakdown of values within Q1 to Q3, with many responses at/around 50, 60, 70, 80, and 100. 
+
+### Q3 - Predictor and Outcome
+Choose one of the predictors that you are interested in and make an appropriate plot that
+helps you identify how it is related with the outcome.
+```{r predictor-outcome}
+s <- ggplot(d, aes(autism, scientists)) +
+  geom_point() + 
+  geom_jitter() + 
+  theme_classic()
+
+b <- ggplot(d, aes(fill = autism, scientists)) +
+  geom_bar() +
+  theme_classic()
+
+s + b
+```
+The plot shows that there is not a clear relationship between believing commonly known scientifically incorrect information and having warm feelings toward scientists. There is little to no evidence suggesting that vaccines cause autism, so this plot puts the belief in this incorrect idea against warmth toward scientists. Surprisingly, there are people with very high trust in scientists that still believe this claim, not just among people with less warmth toward scientists. I chose a bar plot to represent this relationship because it was important to see the breakdown at various levels of warmth, which was less clear in a scatterplot than in the barplot. 
+
+### Q4 - Two Predictors
+Choose two of the predictors that you are interested in and make an appropriate plot that
+helps you identify how they are related.
+```{r two-predictors}
+ggplot(d, aes(x = draf, y = cdc, color = scientists))+
+  geom_point() + 
+  geom_jitter() + 
+  geom_smooth() 
+```
+
+I chose these variables because I wanted to see if there was a noticable influence of perceptions of Dr. Fauci on perceptions of the CDC because the two could easily be linked together. The scatterplot allows feelings toward both of them to be graphed against each other so any relationship could be more visible. There does not appear to be a relationship between the two, as seen by the large distribution of observations throughout values of warmth and that there is no clear trend between the two predictors in general because the observations are scattered with no clear pattern. 
 
 ## Modeling
 
-*Add question headers as needed*.
+### Q5 - Choosing Models
+Choose two modeling approaches that you think would do well for this problem and your
+chosen variables. One of the two modeling approaches must be one of the tree based methods
+you learned about during Modeul 7 (single tree, random forest, gradient boosting machine,
+BART).
+Explain in 4-5 sentences why you chose these two modeling strategies.
+
+I chose random forests and lasso. This is because I want to feel more confident with the random forests method and it is more accurate than a single decision tree and more understandable than a gbm I also chose lasso because I like that it eliminates variables that do not add enough to the model, which makes interpreting which predictors are important easier. Both of these will point to which predictors are the most important in terms of predicting feelings toward scientists. 
+
+### Q6 - Fitting Models
+Fit the two models. In each case, if it involves tuning hyperparameters, explain how you tuned
+them and why. If you did not tune but chose specific tuning parameter values, explain why.
+```{r test-train}
+set.seed(342)
+train <- sample(c(TRUE, FALSE), nrow(d),
+     replace = TRUE, prob=c(.7,.3))
+test <- (!train)
+```
+
+```{r lasso}
+# making matrix
+x <- model.matrix(scientists ~ ., data = d)[, -1]
+y <- d$scientists
+# set seed
+set.seed(387)
+# do cross validation
+cv_l <- cv.glmnet(x[train,], y[train], alpha = 1,
+lambda = 10^seq(10, -2, length = 100))
+# saving optimal lambda
+bestlam_l <- cv_l$lambda.min
+# calculating MSE
+lasso_pred <- predict(cv_l, s = bestlam_l,
+newx = x[test, ])
+lasso_mse <- mean((lasso_pred - y[test])^2)
+# coefficients that matter
+lasso_mod <- glmnet(x, y, lambda = bestlam_l)
+(coef_l <-coef(lasso_mod))
+```
+```{r rf}
+# sets seed
+set.seed(286)
+
+# sets training parameters
+train_control <- trainControl(method="cv", number = 5)
+
+# gets grid for mtry
+# uses 4:6 because there are 16 variables and p/3 is about that range
+# also includes the full number to see if bagging is a better approach
+tune_grid <- expand.grid(mtry = c(4,5,6, 16))
+
+# does training
+best_forest <- train(scientists ~ ., data = d[train,], 
+                     trControl = train_control, 
+                     method="rf", 
+                     tuneGrid = tune_grid,
+                     verbose = FALSE)
+
+# uses 4 for mtry because standard for regression trees in random forests
+# is p/3, and 16/3 is closest to 5 
+# gets test for y
+y_test <- y[test]
+# predictions for test set with optimal l
+rf_sci <- randomForest(scientists ~ ., data = d[train,], mtry = 4, importance = TRUE)
+yhat_rf <- predict(rf_sci, newdata = d[test,])
+
+# calculates MSE
+rf_mse <- mean((yhat_rf - y_test)^2)
+```
+### Q7 - Interpreting Models
+For each of the models, what do they tell you about the relationship between the predictor you
+picked for Q4 and the outcome? Write a 3-4 sentence summary about the possible relationship
+implied by the two modeling approaches.
+
+These approaches tell us that the most important predictors in determining feelings toward scientists among the selected group of predictors are 
+
+### Q8 - Comparing Models
+Compare the two models in an appropriate way. Explain which model fits better in 3-4
+sentences and how you know. In a further 3-4 sentences, explain why you chose to compare
+them in the way you did
+```{r comparing-models}
+# putting together data of predicted, actual, and model type
+dataplot <- data.frame(true_value = c(y[test], y[test]))
+dataplot$model_type <- c(rep("Lasso", length(lasso_pred)),
+                         rep("Random Forests", length(yhat_rf)))
+dataplot$predictions <- c(lasso_pred, yhat_rf)
+#plotting predicted vs actual by model type
+compare <- ggplot(dataplot, aes(x = predictions, y = true_value, color = model_type)) +
+  geom_point() + 
+  geom_abline(intercept = 0, slope = 1) +
+  labs(x = "Predicted Outcome", y = "Actual Outcome",
+       title = 'Comparison of Model Type by Predicted vs Actual', 
+       color = 'Model Type') + 
+  theme_classic() 
+
+# function giving R2
+r2 <- function(predicted, y) {
+  #find SST and SSE
+  sst <- sum((y - mean(y))^2)
+  sse <- sum((predicted - y)^2)
+  #find R-Squared
+  rsq <- 1 - sse/sst 
+}
+
+# setting up values for graph
+name=c("tree","lasso")
+mse_all=c(lasso_mse, rf_mse)
+value=c(r2(lasso_pred, y[test]), r2(yhat_rf, y[test]))
+compare_data=tibble(name,mse_all,value)
+p1=ggplot(compare_data, aes(x=name, y=value))+
+  geom_col()+ coord_cartesian(ylim=c(0.85,0.875))+
+  labs(x="Model",y="R2",title = "Comparing R2")
+p2=ggplot(compare_data, aes(x=name, y=mse_all))+
+  geom_col()+ coord_cartesian(ylim=c(0.0080,0.0095))+
+  labs(x="Model",y="MSE",title = "Comparing MSE")
+compare / (p1+p2)
+```
 
