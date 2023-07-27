@@ -13,7 +13,7 @@ suppressPackageStartupMessages(library(tidyverse))
 suppressPackageStartupMessages(library(dplyr))
 library(patchwork)
 suppressPackageStartupMessages(library(glmnet)) # for ridge, LASSO
-library(randomForest)
+suppressPackageStartupMessages(library(randomForest))
 suppressPackageStartupMessages(library(caret))
 library(Matrix)
 ```
@@ -24,7 +24,8 @@ library(Matrix)
 #| warning: false
 #| message: false
 # imports data, sets na to be any of the values
-# where the respondent did not give an answer
+# where the respondent did not give an answer or
+# reported unable to answer
 # note that 'inapplicable' was retained (-1)
 anes2020 <- read_csv("data/anes2020.csv", show_col_types = FALSE,
               na = c('-9', '-8', '-7', '-6', '-5', '-4', '-2', '998', '999'))
@@ -66,11 +67,12 @@ d$party <- relevel(d$party, ref = '7')
 ```
 
 ### Q1
-The variables I chose tried to reflect a variety of things that I thought could be related to how people feel toward scientists. I chose some politically oriented variables, such as who and which party they voted for in the presidential election, because this was a highly polarized election and one candidate had very different views on science than another. I also chose a few feelings thermometers about related topics to science, such as Dr. Anthony Fauci, planned parenthood, and the cdc. I then added a few general science knowledge questions, such as if science is easy to understand as a nonexpert and if vaccines cause autism, to see if understanding of science plays a role in feelings toward scientists. The last set of variables I included dealt with how the respondent felt about political issues aligned with science, such as climate change, covid response, and teaching in schools, which would likely have an effect on how scientists are viewed. 
+The variables I chose tried to reflect a variety of things that I thought could be related to how people feel toward scientists. I chose some politically oriented variables, such as who and which party they voted for in the presidential election, because this was a highly polarized election and one candidate appeared to have very different views on science and science-related issues than another. I also chose a few feelings thermometers about related topics to science, such as Dr. Anthony Fauci, planned parenthood, and the cdc. I would expect that people who liked scientists less would have lower scores on these feelings thermometers. I then added a few general science knowledge questions, such as if science is easy to understand as a nonexpert and if vaccines cause autism, because I expected that if people held misconceptions about scientific facts that may like scientists less. The last set of variables I included dealt with how the respondent felt about political issues aligned with science, such as climate change, covid response, and teaching in schools, which would likely have an effect on how scientists are viewed, with a more minimal view about the role of science in these issues being associated with more negative feelings of scientists. 
 
 ## Data Visualization
 ```{r outcome-plot}
 #| message: false
+#| warning: false
 b <- ggplot(d, aes(x = scientists)) +
   geom_boxplot() +
   labs(title = 'Warmth Toward Scientists', 
@@ -83,7 +85,9 @@ h <- ggplot(d, aes(x = scientists)) +
 
 b + h
 ```
-The boxplot above helps visualize the distribution on feelings toward scientists. We can see that from the 25th percentile and above there are feelings above a 65 warmness rating, while there are a few outliers in the below 25 warmth rating composing a small part of the data. The median warmth appears to be around 85. I also included a histogram, which shows similar information to the boxplot and adds more information regarding the specific breakdown of values within Q1 to Q3, with many responses at/around 50, 60, 70, 80, and 100. 
+The boxplot above helps visualize the distribution on feelings toward scientists, while also making key points in the data (outliers, median, quartiles) clear visually, which is why I chose this plot. We can see that from the 25th percentile and above there are feelings above a 65 warmness rating, while there are a few outliers in the below 25 warmth rating composing a small part of the data. The median warmth appears to be around 85, indicating that a majority of people have overall warm-feelings toward scientists after the 2020 election. 
+
+I also included a histogram, which shows similar information to the boxplot and adds more information regarding the specific breakdown of values within Q1 to Q3, with many responses at/around 50, 60, 70, 80, and 100, suggesting that people may have picked easy common multiples of 10 or 5 in the general range of their feelings as opposed to having reasons for specific numbers. I added this additionally because I wanted to have a clearer picture of the breakdown of specific responses to the question than a boxplot provides. The boxplot is more helpful in general, but this plot adds more information about the spread of the data. 
 
 ### Q3 - Predictor and Outcome
 ```{r predictor-outcome}
@@ -104,14 +108,17 @@ b <- ggplot(d, aes(fill = autism, scientists)) +
 
 s + b
 ```
-The plot shows that there is not a clear relationship between believing commonly known scientifically incorrect information and having warm feelings toward scientists. There is little to no evidence suggesting that vaccines cause autism, so this plot puts the belief in this incorrect idea against warmth toward scientists. Surprisingly, there are people with very high trust in scientists that still believe this claim, not just among people with less warmth toward scientists. I chose a bar plot to represent this relationship because it was important to see the breakdown at various levels of warmth, which was less clear in a scatterplot than in the barplot. 
+The plot shows that there is not a clear relationship between believing the myth that vaccines cause autism and having warmer/colder feelings toward scientists. There is little to no evidence suggesting that vaccines cause autism, so this plot puts the belief in this incorrect idea against warmth toward scientists. Surprisingly, there are people with very high trust in scientists that still believe this claim, not just among people with less warmth toward scientists. I did not expect there to be a wide spread of people believing this myth across high to low warmth values. I chose a scatterplot because it makes the overlap between yes and no beliefs about vaccines and autism across degrees of warmth toward scientists very visible for comparison.  
+
+I also added a bar plot to represent this relationship because it was important to see the breakdown at various levels of warmth, which was less clear in a scatterplot than in the barplot. 
 
 ### Q4 - Two Predictors
 ```{r two-predictors}
+#| message: false
+#| warning: false
 ggplot(d, aes(x = draf, y = cdc, color = scientists))+
   geom_point() + 
   geom_jitter() + 
-  geom_smooth() +
   labs(title = "Feelings toward Fauci by Feelings toward the CDC with 
        warmth toward Scientists", 
        x = 'Feelings toward Fauci (0-100 warmth scale)',
@@ -119,12 +126,12 @@ ggplot(d, aes(x = draf, y = cdc, color = scientists))+
        color = 'Feelings toward scientists (0-100 warmth scale)')
 ```
 
-I chose these variables because I wanted to see if there was a noticable influence of perceptions of Dr. Fauci on perceptions of the CDC because the two could easily be linked together. The scatterplot allows feelings toward both of them to be graphed against each other so any relationship could be more visible. There does not appear to be a relationship between the two, as seen by the large distribution of observations throughout values of warmth and that there is no clear trend between the two predictors in general because the observations are scattered with no clear pattern. 
+I chose these variables because I wanted to see if there was a noticeable influence of perceptions of Dr. Fauci on perceptions of the CDC because the two could easily be linked together. I thought that since both are figures that became talked about a lot in 2020 regarding COVID that both were somewhat linked to the government, that there may be a relationship between how people feel about Fauci and the CDC. The scatterplot allows feelings toward both of them to be graphed against each other so any relationship could be more visible. There does not appear to be a relationship between the two, as seen by the large distribution of observations throughout values of warmth and that there is no clear trend between the two predictors in general because the observations are scattered with no clear pattern. I chose a scatterplot. The scatterplot would show a relationship between the two variables by making the distribution visual, which would show a pattern if there was one. It makes it clear that there likely isn't one based on the widely scattered points throughout values of warmth for both predictors. 
 
 ## Modeling
 
 ### Q5 - Choosing Models
-I chose random forests and lasso. This is because I want to feel more confident with the random forests method and it is more accurate than a single decision tree and more understandable than a gbm. I also chose lasso because I like that it eliminates variables that do not add enough to the model, which makes interpreting which predictors are important easier. Both of these will point to which predictors are the most important in terms of predicting feelings toward scientists. Random forest's importance plot will point to which variables had the most influence in the response, while lasso will do a similar task by showing the most important but also eliminating variables that had unimportant effects. This will make comparing the two models more feasible because they both are great at identifying the most important predictors in different ways. 
+I chose random forests and lasso. Random forests is a more accurate method than single decision trees, and oftentimes more accurate than bagging as well. I wanted to focus on trees more than GBM for this assignment because I can see myself using trees more in the future. I chose lasso because I like that it eliminates variables that do not add enough to the model, which makes interpreting which predictors are important easier than with ridge regression. Both of these methods were chosen because they will point to which predictors are the most important in terms of predicting feelings toward scientists. Random forest's importance plot will point to which variables had the most influence in the response, while lasso will do a similar task by showing the most important but also eliminating variables that had unimportant effects. This will make comparing the two models more feasible because they both are great at identifying the most important predictors in different ways. 
 
 ### Q6 - Fitting Models
 ```{r test-train}
@@ -162,6 +169,7 @@ lasso_mse <- mean((lasso_pred - y[test])^2)
 lasso_mod <- glmnet(x, y, lambda = bestlam_l)
 coef_l <-coef(lasso_mod)
 ```
+
 ```{r rf}
 # sets seed
 set.seed(286)
@@ -170,7 +178,8 @@ set.seed(286)
 train_control <- trainControl(method="cv", number = 5)
 
 # gets grid for mtry
-tune_grid <- expand.grid(mtry = c(4,5,6,7,16))
+tune_grid <- expand.grid(mtry = c(4:15))
+tune_grid <- expand.grid(mtry = c(4,5,6,7,8,9,15))
 
 # does training
 best_forest <- train(scientists ~ ., data = d[train,], 
@@ -194,9 +203,9 @@ yhat_rf <- predict(rf_sci, newdata = d[test,])
 rf_mse <- mean((yhat_rf - y_test)^2)
 
 ```
-For random forests, I used tuning to find the optimal number of variables (mtry) to minimize error. I did this using 5 fold cross validation across 4:7 and 16. These numbers were chosen because the default for regression trees would be around 4/5 given the number of parameters, so I wanted to include a range around that default to find the best number. I also included the full number of predictors to see if bagging was a better option than random forests. 
+For random forests, I used tuning to find the optimal number of variables (mtry) to minimize error. I did this using 5 fold cross validation across 4:7 and 16. These numbers were chosen because the default for regression trees would be around 4/5 given the number of parameters, so I wanted to include a range around that default to find the best number. I also included the full number of predictors to see if bagging was a better option than random forests. In the end, I decided to search across the entire range in case there was a better mtry value within that range, which may be possible, as seen in the example labs. 
 
-With LASSO, I used 10 fold cross validation to find the optimal lambda value for the model. This value helps us avoid overfitting the model and is integral in how we reduce the number of variables in LASSO. The optimal number is chosen to minimize error. 
+With LASSO, I used 10 fold cross validation to find the optimal lambda value for the model. This value helps us avoid overfitting the model and is integral in how we reduce the number of variables in LASSO. The optimal number is chosen to minimize error which is why I used cross validation to compare/minimize errors.
 
 ### Q7 - Interpreting Models
 ```{r comparing-model-important-predictors}
@@ -244,20 +253,21 @@ coef_df$Feature <- rownames(coef_df)
 # prints
 coef_df
 ```
-In Q4 I picked feelings about Dr. Anthony Fauci and feelings about the CDC. LASSO found both of these to be important variables, but they did not have as much of an impact as other predictors, such as beliefs about science in covid response and presidential choice. Both feelings toward Fauci and the CDC were associated with an increase in warmth toward scientists. Random Forests found that feelings toward Fauci and the CDC were among the top most important predictors when considering node purity and MSE. These models tell us that there is likely an important effect of feelings toward Fauci and the CDC on feelings toward scientists, although the magnitude of importance is not clear between the two. 
+In Q4 I picked feelings about Dr. Anthony Fauci and feelings about the CDC. LASSO found both of these to be important variables, but they did not have as much of an impact as other predictors, such as beliefs about science in covid response and presidential choice. Both feelings toward Fauci and the CDC were associated with an increase in warmth toward scientists. Random Forests found that feelings toward Fauci and the CDC were among the top most important predictors when considering node purity and MSE. These models tell us that there is likely an important effect of feelings toward Fauci and the CDC on feelings toward scientists, with an increase in warm feelings toward Fauci or the CDC increasing feelings towards scientists. 
 
 ### Q8 - Comparing Models
 ```{r comparing-models}
 # putting together data of predicted, actual, and model type
 dataplot <- data.frame(true_value = c(y[test], y[test]))
 dataplot$model_type <- c(rep("Lasso", length(lasso_pred)),
-                         rep("Random Forests", length(yhat_rf)))
+                         rep("Random Forest", length(yhat_rf)))
 dataplot$predictions <- c(lasso_pred, yhat_rf)
 
 #plotting predicted vs actual by model type
 compare <- ggplot(dataplot, aes(x = predictions, y = true_value,
                                 color = model_type)) +
   geom_point(shape = 1) + 
+  geom_jitter() +
   geom_abline(intercept = 0, slope = 1) +
   labs(x = "Predicted Outcome", y = "Actual Outcome",
        title = 'Comparison of Model Type by Predicted vs Actual', 
@@ -265,10 +275,9 @@ compare <- ggplot(dataplot, aes(x = predictions, y = true_value,
   theme_classic() 
 
 # setting up values for graph of mse
-name=c("tree","lasso")
+name=c("Random Forest","LASSO")
 mse_all=c(lasso_mse, rf_mse)
-value=c(r2(lasso_pred, y[test]), r2(yhat_rf, y[test]))
-compare_data=tibble(name,mse_all,value)
+compare_data=tibble(name,mse_all)
 
 #plots comparison of mse
 p2=ggplot(compare_data, aes(x=name, y=mse_all))+
@@ -278,6 +287,6 @@ compare
 p2
 ```
 
-1) The tree model fits better. I know this because the MSE value for the tree model is lower than that of the LASSO model, meaning it is better at making predictions closer to the true values. This is seen in the bar plot comparing the MSEs directly, but also in the scatterplot which shows the distribution of how accurate a prediction was by its distance from the line. 
+1) The random forest model fits better. I know this because the MSE value for the tree model is lower than that of the LASSO model, meaning it is better at making predictions closer to the true values. This is seen in the bar plot comparing the MSEs directly where the rf model has a lower MSE than the LASSO model, but also in the scatterplot which shows the distribution of how accurate a prediction was by its distance from the line. 
 
-2) I chose to compare MSE because this measures the average squared difference between the predicted and actual values, telling us how close a model's predictions are to the actual values, which is important to know when doing a prediction task like this one. The bar plot of MSE and the scatterplot visualize the differences in predictions between model types. 
+2) I chose to compare MSE because this measures the average squared difference between the predicted and actual values, telling us how close a model's predictions are to the actual values. That is important to know when doing a prediction task like this one. The bar plot of MSE and the scatterplot visualize the differences in predictions between model types which make the results clearer than had the output alone been printed in a table or as code. 
