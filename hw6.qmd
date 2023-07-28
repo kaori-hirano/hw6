@@ -102,15 +102,13 @@ s <- ggplot(d, aes(autism, scientists)) +
 b <- ggplot(d, aes(fill = autism, scientists)) +
   geom_bar() +
   theme_classic() + 
-  labs(title = 'Warmth toward scientists by belief that vaccines cause autism',
+  labs(title = 'Warmth by belief vaccines cause autism',
        x = 'Warmth toward Scientists (0-100 warmth scale)',
        color = 'Belief that Vaccines Cause Autism (0, no; 1, yes)')
 
-s + b
+s 
 ```
-The plot shows that there is not a clear relationship between believing the myth that vaccines cause autism and having warmer/colder feelings toward scientists. There is little to no evidence suggesting that vaccines cause autism, so this plot puts the belief in this incorrect idea against warmth toward scientists. Surprisingly, there are people with very high trust in scientists that still believe this claim, not just among people with less warmth toward scientists. I did not expect there to be a wide spread of people believing this myth across high to low warmth values. I chose a scatterplot because it makes the overlap between yes and no beliefs about vaccines and autism across degrees of warmth toward scientists very visible for comparison.  
-
-I also added a bar plot to represent this relationship because it was important to see the breakdown at various levels of warmth, which was less clear in a scatterplot than in the barplot. 
+The plot shows that there is not a clear relationship between believing the myth that vaccines cause autism and having warmer/colder feelings toward scientists. There is little to no evidence suggesting that vaccines cause autism, so this plot puts the belief in this incorrect idea against warmth toward scientists. Surprisingly, there are people with very high trust in scientists that still believe this claim, not just among people with less warmth toward scientists. I did not expect there to be a wide spread of people believing this myth across high to low warmth values. I chose a scatterplot because it makes the overlap between yes and no beliefs about vaccines and autism across degrees of warmth toward scientists very visible for comparison. It also clearly displays the overall number in each category, with more in the 'no' belief than 'yes'.
 
 ### Q4 - Two Predictors
 ```{r two-predictors}
