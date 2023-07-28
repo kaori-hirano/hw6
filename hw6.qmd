@@ -264,15 +264,15 @@ dataplot$model_type <- c(rep("Lasso", length(lasso_pred)),
 dataplot$predictions <- c(lasso_pred, yhat_rf)
 
 #plotting predicted vs actual by model type
-compare <- ggplot(dataplot, aes(x = predictions, y = true_value,
-                                color = model_type)) +
-  geom_point(shape = 1) + 
-  geom_jitter() +
-  geom_abline(intercept = 0, slope = 1) +
-  labs(x = "Predicted Outcome", y = "Actual Outcome",
-       title = 'Comparison of Model Type by Predicted vs Actual', 
-       color = 'Model Type') + 
-  theme_classic() 
+#compare <- ggplot(dataplot, aes(x = predictions, y = true_value,
+#                                color = model_type)) +
+ # geom_point(shape = 1) + 
+#  geom_jitter() +
+#  geom_abline(intercept = 0, slope = 1) +
+#  labs(x = "Predicted Outcome", y = "Actual Outcome",
+#       title = 'Comparison of Model Type by Predicted vs Actual', 
+#       color = 'Model Type') + 
+#  theme_classic() 
 
 # setting up values for graph of mse
 name=c("Random Forest","LASSO")
