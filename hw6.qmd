@@ -123,7 +123,8 @@ ggplot(d, aes(x = draf, y = cdc, color = scientists))+
        warmth toward Scientists", 
        x = 'Feelings toward Fauci (0-100 warmth scale)',
        y = 'Feelings toward the CDC (0-100 warmth scale)',
-       color = 'Feelings toward scientists (0-100 warmth scale)')
+       color = 'Feelings toward scientists (0-100 warmth scale)') +
+  theme(legend.position = "bottom")
 ```
 
 I chose these variables because I wanted to see if there was a noticeable influence of perceptions of Dr. Fauci on perceptions of the CDC because the two could easily be linked together. I thought that since both are figures that became talked about a lot in 2020 regarding COVID that both were somewhat linked to the government, that there may be a relationship between how people feel about Fauci and the CDC. The scatterplot allows feelings toward both of them to be graphed against each other so any relationship could be more visible. There does not appear to be a relationship between the two, as seen by the large distribution of observations throughout values of warmth and that there is no clear trend between the two predictors in general because the observations are scattered with no clear pattern. I chose a scatterplot. The scatterplot would show a relationship between the two variables by making the distribution visual, which would show a pattern if there was one. It makes it clear that there likely isn't one based on the widely scattered points throughout values of warmth for both predictors. 
@@ -178,8 +179,7 @@ set.seed(286)
 train_control <- trainControl(method="cv", number = 5)
 
 # gets grid for mtry
-tune_grid <- expand.grid(mtry = c(4:15))
-tune_grid <- expand.grid(mtry = c(4,5,6,7,8,9,15))
+tune_grid <- expand.grid(mtry = c(4,5,6,7,8,15))
 
 # does training
 best_forest <- train(scientists ~ ., data = d[train,], 
@@ -203,7 +203,7 @@ yhat_rf <- predict(rf_sci, newdata = d[test,])
 rf_mse <- mean((yhat_rf - y_test)^2)
 
 ```
-For random forests, I used tuning to find the optimal number of variables (mtry) to minimize error. I did this using 5 fold cross validation across 4:7 and 16. These numbers were chosen because the default for regression trees would be around 4/5 given the number of parameters, so I wanted to include a range around that default to find the best number. I also included the full number of predictors to see if bagging was a better option than random forests. In the end, I decided to search across the entire range in case there was a better mtry value within that range, which may be possible, as seen in the example labs. 
+For random forests, I used tuning to find the optimal number of variables (mtry) to minimize error. I did this using 5 fold cross validation across 4:8 and 16. These numbers were chosen because the default for regression trees would be around 4/5 given the number of parameters, so I wanted to include a range around that default to find the best number. I chose to do CV even though there is a default because, as we saw in the labs, the default value may not always be the best fit. I also included the full number of predictors to see if bagging was a better option than random forests.
 
 With LASSO, I used 10 fold cross validation to find the optimal lambda value for the model. This value helps us avoid overfitting the model and is integral in how we reduce the number of variables in LASSO. The optimal number is chosen to minimize error which is why I used cross validation to compare/minimize errors.
 
@@ -253,7 +253,7 @@ coef_df$Feature <- rownames(coef_df)
 # prints
 coef_df
 ```
-In Q4 I picked feelings about Dr. Anthony Fauci and feelings about the CDC. LASSO found both of these to be important variables, but they did not have as much of an impact as other predictors, such as beliefs about science in covid response and presidential choice. Both feelings toward Fauci and the CDC were associated with an increase in warmth toward scientists. Random Forests found that feelings toward Fauci and the CDC were among the top most important predictors when considering node purity and MSE. These models tell us that there is likely an important effect of feelings toward Fauci and the CDC on feelings toward scientists, with an increase in warm feelings toward Fauci or the CDC increasing feelings towards scientists. 
+In Q4 I picked feelings about Dr. Anthony Fauci and feelings about the CDC. LASSO found both of these to be important variables, but they did not have as much of an impact as other predictors, such as beliefs about science in covid response and presidential choice. Both feelings toward Fauci and the CDC were associated with an increase in warmth toward scientists. Random Forests found that feelings toward Fauci and the CDC were among the top most important predictors when considering node purity and MSE. These models tell us that there is likely an important effect of feelings toward Fauci and the CDC on feelings toward scientists, with an increase in warm feelings toward Fauci or the CDC increasing feelings towards scientists, although the level of importance warrants further investigation. 
 
 ### Q8 - Comparing Models
 ```{r comparing-models}
@@ -287,6 +287,6 @@ compare
 p2
 ```
 
-1) The random forest model fits better. I know this because the MSE value for the tree model is lower than that of the LASSO model, meaning it is better at making predictions closer to the true values. This is seen in the bar plot comparing the MSEs directly where the rf model has a lower MSE than the LASSO model, but also in the scatterplot which shows the distribution of how accurate a prediction was by its distance from the line. 
+1) The random forest model fits better. I know this because the MSE value for the tree model is lower than that of the LASSO model, meaning it is better at making predictions closer to the true values. This is seen in the bar plot comparing the MSEs directly where the rf model has a lower MSE than the LASSO model. 
 
-2) I chose to compare MSE because this measures the average squared difference between the predicted and actual values, telling us how close a model's predictions are to the actual values. That is important to know when doing a prediction task like this one. The bar plot of MSE and the scatterplot visualize the differences in predictions between model types which make the results clearer than had the output alone been printed in a table or as code. 
+2) I chose to compare MSE because this measures the average squared difference between the predicted and actual values, telling us how close a model's predictions are to the actual values. That is important to know when doing a prediction task like this one. The bar plot of MSE displays the differences in prediction ability between model types which make the difference in results clearer than had the output alone been printed in a table or as code. 
