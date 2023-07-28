@@ -203,7 +203,7 @@ rf_mse <- mean((yhat_rf - y_test)^2)
 ```
 For random forests, I used tuning to find the optimal number of variables (mtry) to minimize error. I did this using 5 fold cross validation across 4:8 and 16. These numbers were chosen because the default for regression trees would be around 4/5 given the number of parameters, so I wanted to include a range around that default to find the best number. I chose to do CV even though there is a default because, as we saw in the labs, the default value may not always be the best fit. I also included the full number of predictors to see if bagging was a better option than random forests.
 
-With LASSO, I used 10 fold cross validation to find the optimal lambda value for the model. This value helps us avoid overfitting the model and is integral in how we reduce the number of variables in LASSO. The optimal number is chosen to minimize error which is why I used cross validation to compare/minimize errors.
+With LASSO, I used 10 fold cross validation to find the optimal lambda value for the model. This value helps us avoid overfitting the model and is integral in how we reduce the number of variables in LASSO. The optimal number is chosen to minimize error which is why I used cross validation to compare/minimize errors. Note that scaling is not needed as all continuous variables are within the same range of possible responses. 
 
 ### Q7 - Interpreting Models
 ```{r comparing-model-important-predictors}
@@ -245,13 +245,10 @@ sorted_coef_matrix <- coef_matrix[order(abs_coef, decreasing = TRUE), ]
 # make into df
 coef_df <- as.data.frame(sorted_coef_matrix)
 
-# add names
-coef_df$Feature <- rownames(coef_df)
-
-# prints
+# prints table
 coef_df
 ```
-In Q4 I picked feelings about Dr. Anthony Fauci and feelings about the CDC. LASSO found both of these to be important variables, but they did not have as much of an impact as other predictors, such as beliefs about science in covid response and presidential choice. Both feelings toward Fauci and the CDC were associated with an increase in warmth toward scientists. Random Forests found that feelings toward Fauci and the CDC were among the top most important predictors when considering node purity and MSE. These models tell us that there is likely an important effect of feelings toward Fauci and the CDC on feelings toward scientists, with an increase in warm feelings toward Fauci or the CDC increasing feelings towards scientists, although the level of importance warrants further investigation. 
+In Q4 I picked feelings about Dr. Anthony Fauci and feelings about the CDC. LASSO found both of these to be important variables, but they did not have as much of an impact as other predictors, such as beliefs about science in covid response and presidential choice, and are among the least influential predictors. However, it must be noted that they are deemed significant predictors. Both feelings toward Fauci and the CDC were associated with an increase in warmth toward scientists. Random Forests found that feelings toward Fauci and the CDC were among the top most important predictors when considering node purity and MSE. These models tell us that there is likely an important effect of feelings toward Fauci and the CDC on feelings toward scientists, with an increase in warm feelings toward Fauci or the CDC increasing feelings towards scientists, although the level of importance warrants further investigation. 
 
 ### Q8 - Comparing Models
 ```{r comparing-models}
